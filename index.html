@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <!-- viewport-fit=cover agar area aman ponsel ikut diperhitungkan -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1E545C">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Finesse Check Up">
+  <meta name="referrer" content="no-referrer-when-downgrade">
+  <meta name="description" content="Mental Health Check Up dari Finesse Psychological Care: tes kepribadian MBTI dan Big Five.">
+
+  <title>Finesse Mental Health Check Up</title>
+  <!-- Ikon disimpan di repository yang sama, jadi tidak bergantung pada tautan Google Drive -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="favicon-192.png">
+
+  <style>
+    /* Tinggi layar di browser ponsel berubah saat bilah alamat menyusut.
+       100vh selalu dihitung terhadap layar penuh, sehingga bagian bawah
+       iframe ikut terpotong. Urutan di bawah dipakai dari yang paling
+       akurat ke cadangan paling aman:
+         1. --app-h  : hasil pengukuran JavaScript, paling presisi
+         2. 100dvh   : satuan dinamis, didukung browser modern
+         3. 100vh    : cadangan terakhir untuk browser lama            */
+    :root {
+      --app-h: 100vh;
+      --brand: #2A6B7A;
+      --brand-dark: #1E545C;
+      --foam: #D8E8E9;
+      --bg: #F4F8F8;
+      --muted: #5F7276;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      background: var(--bg);
+      overflow: hidden;
+      overscroll-behavior: none;              /* cegah tarik-segarkan di atas iframe */
+      -webkit-text-size-adjust: 100%;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    }
+
+    .app-frame {
+      position: fixed;
+      inset: 0;
+      height: var(--app-h);
+      height: 100dvh;
+      display: block;
+      background: var(--bg);
+      /* hormati area aman ponsel berponi dan bilah gestur */
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+
+    iframe {
+      display: block;                         /* hilangkan celah bawaan elemen inline */
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: var(--bg);
+    }
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: linear-gradient(180deg, #F3F8F8 0%, #FFFFFF 100%);
+      color: var(--muted);
+      font-size: 14px;
+      z-index: 10;
+      transition: opacity .25s ease;
+    }
+    .loader.hide { opacity: 0; pointer-events: none; }
+    .loader img { height: 34px; width: auto; }
+
+    .spin {
+      width: 30px; height: 30px;
+      border: 3px solid var(--foam);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: sp .7s linear infinite;
+    }
+    @keyframes sp { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2s; } }
+
+    .gagal { max-width: 320px; text-align: center; line-height: 1.6; padding: 0 20px; }
+    .gagal a { color: var(--brand); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="loader" id="loader">
+    <img src="logo-teal.png" alt="Finesse">
+    <div class="spin"></div>
+    <div>Memuat Mental Health Check Up...</div>
+  </div>
+
+  <div class="app-frame">
+    <!-- Ganti src dengan URL Web App (Deploy > Manage deployments, berakhiran /exec) -->
+    <iframe
+      id="app"
+      src="https://script.google.com/macros/s/AKfycbzk7TlfFbjNO-SwnPjbdzfQ1OlwmKPxiMi3i0Y5jxxJTr_yJwNkK5knOYC03s_1ywmIMA/exec"
+      title="Finesse Mental Health Check Up"
+      allow="clipboard-write; fullscreen"
+      allowfullscreen></iframe>
+  </div>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+
+      /* Ukur tinggi tampak yang sebenarnya. visualViewport mengikuti
+         penyusutan bilah alamat secara langsung, jadi dipakai lebih dulu. */
+      function ukur() {
+        var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+        root.style.setProperty('--app-h', h + 'px');
+      }
+
+      ukur();
+      window.addEventListener('resize', ukur);
+      window.addEventListener('orientationchange', function () { setTimeout(ukur, 250); });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', ukur);
+        window.visualViewport.addEventListener('scroll', ukur);
+      }
+
+      /* Sembunyikan loader setelah iframe siap, dengan batas waktu
+         supaya tidak menggantung bila pemuatan lambat. */
+      var frame = document.getElementById('app');
+      var loader = document.getElementById('loader');
+      var selesai = false;
+
+      function tutupLoader() {
+        if (selesai) return;
+        selesai = true;
+        loader.classList.add('hide');
+        setTimeout(function () { loader.style.display = 'none'; }, 300);
+      }
+
+      frame.addEventListener('load', tutupLoader);
+      setTimeout(tutupLoader, 12000);
+
+      /* Peserta tidak perlu akun Google (web app diakses Anyone), jadi
+         pesan bantuan cukup mengarahkan ke koneksi dan tautan langsung. */
+      setTimeout(function () {
+        if (selesai) return;
+        loader.innerHTML =
+          '<img src="logo-teal.png" alt="Finesse">' +
+          '<div class="spin"></div>' +
+          '<div class="gagal">Masih memuat. Bila tidak terbuka juga, periksa koneksi internet Anda, ' +
+          'lalu buka <a href="' + frame.src + '" target="_blank" rel="noopener">aplikasinya langsung</a>.</div>';
+      }, 8000);
+    })();
+  </script>
+
+</body>
+</html>
